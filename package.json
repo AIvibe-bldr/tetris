@@ -1,0 +1,1 @@
+{\n  "name": "tetris",\n  "version": "1.0.0",\n  "description": "Tetris game",\n  "scripts": {\n    "lint": "eslint .",\n    "lint:fix": "eslint . --fix"\n  },\n  "keywords": ["tetris", "game"],\n  "author": "",\n  "license": "MIT",\n  "devDependencies": {\n    "eslint": "^8.56.0"\n  }\n}
