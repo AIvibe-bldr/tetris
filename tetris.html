@@ -272,17 +272,21 @@
       display: none;
     }
 
-    /* ゲーム中のみ表示（スタート画面では非表示） */
-    .panel-box.game-control-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
+    /* ゲーム中のみ表示（スタート画面では非表示）・右上ポーズボタン */
+    .game-control-panel {
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      z-index: 15;
     }
-    .panel-box.game-control-panel.hidden {
+    .game-control-panel.hidden {
       display: none !important;
     }
-    .game-control-panel .btn {
-      width: 100%;
+    .btn-pause {
+      padding: 4px 10px;
+      font-size: 12px;
+      border-radius: 999px;
+      box-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
     }
     /* ===== 携帯電話対応：画面幅に合わせてスケール変更 ===== */
 @media (max-width: 768px) {
@@ -297,14 +301,22 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 12px;
-  transform: scale(0.85);
-  transform-origin: center top;
   margin: 0 auto;
-  width: auto !important;
-  min-width: 0 !important;
-  max-width: 100% !important;
-  height: auto !important;
-  min-height: 0 !important;
+  width: 100vw;
+  max-width: 100vw;
+  height: 100vh;
+  max-height: 100vh;
+  box-sizing: border-box;
+}
+
+.board-wrapper {
+  width: min(100vw - 16px, 420px);
+  height: auto;
+}
+
+canvas#board {
+  width: 100%;
+  height: auto;
 }
 
 .side-panel {
@@ -329,33 +341,7 @@ canvas#board {
 }
 }
 
-@media (max-width: 480px) {
-.game-container {
-  transform: scale(0.58);
-  transform-origin: center top;
-}
-}
-
-@media (max-width: 400px) {
-.game-container {
-  transform: scale(0.48);
-  transform-origin: center top;
-}
-}
-
-@media (max-width: 360px) {
-.game-container {
-  transform: scale(0.44);
-  transform-origin: center top;
-}
-}
-
-@media (max-width: 320px) {
-.game-container {
-  transform: scale(0.39);
-  transform-origin: center top;
-}
-}
+/* 追加のスケール指定は不要になったため削除（fitBoardToScreenで調整） */
 
   </style>
 </head>
@@ -365,6 +351,11 @@ canvas#board {
   <!-- ゲームボード -->
   <div class="board-wrapper">
     <canvas id="board"></canvas>
+
+    <!-- ポーズボタン（ゲーム中のみ表示） -->
+    <div class="game-control-panel hidden" id="gameControlPanel">
+      <button type="button" class="btn btn-pause" id="pauseBtn">ポーズ</button>
+    </div>
 
     <!-- スタート画面 -->
     <div class="overlay" id="startScreen">
@@ -394,6 +385,14 @@ canvas#board {
         <button type="button" class="btn pause-overlay-btn" id="pauseResumeBtn">再開</button>
         <button type="button" class="btn pause-overlay-btn" id="endGameBtn">ゲームを終了</button>
       </div>
+      <div class="pause-controls">
+        <h3>操作方法</h3>
+        <div class="controls">
+          <kbd>←</kbd><kbd>→</kbd>移動<br>
+          <kbd>↑</kbd>回転 <kbd>↓</kbd>落下<br>
+          <kbd>Space</kbd>ハードドロップ
+        </div>
+      </div>
     </div>
   </div>
 
@@ -414,17 +413,6 @@ canvas#board {
     <div class="panel-box">
       <h3>ネクスト</h3>
       <canvas id="next" width="160" height="160"></canvas>
-    </div>
-    <div class="panel-box panel-controls">
-      <h3>操作</h3>
-      <div class="controls">
-        <kbd>←</kbd><kbd>→</kbd>移動<br>
-        <kbd>↑</kbd>回転 <kbd>↓</kbd>落下<br>
-        <kbd>Space</kbd>ハードドロップ
-      </div>
-    </div>
-    <div class="panel-box game-control-panel hidden" id="gameControlPanel">
-      <button type="button" class="btn" id="pauseBtn">ポーズ</button>
     </div>
   </div>
 </div>
@@ -543,6 +531,41 @@ canvas#board {
     background: linear-gradient(113deg, #111820 83%, #271789 95%);
     border-radius: 7px;
     box-shadow: 0 1px 8px #00fff755;
+  }
+
+  /* --- スマホ画面ではプレイ画面を端末サイズにフィットさせる --- */
+  @media (max-width: 768px) {
+    .game-container {
+      margin: 0 auto;
+      padding: 8px;
+      width: 100vw;
+      max-width: 100vw;
+      height: 100vh;
+      max-height: 100vh;
+      box-sizing: border-box;
+    }
+
+    .board-wrapper {
+      width: 100%;
+      max-width: 100%;
+      aspect-ratio: 10 / 20; /* 横:縦 = 10:20 の比率を維持 */
+      height: auto;
+    }
+
+    canvas#board {
+      width: 100%;
+      height: 100%;
+    }
+
+    .side-panel {
+      width: 100%;
+      max-width: 100%;
+      margin-top: 8px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
+    }
   }
 
   /* ========== オーバーレイ: ネオングロー/グラスモーフィズム ========== */
@@ -686,6 +709,25 @@ const pauseLabel     = document.getElementById('pauseLabel');
 // キャンバスサイズ設定
 boardCanvas.width  = COLS * BLOCK_SIZE;
 boardCanvas.height = ROWS * BLOCK_SIZE;
+
+// 画面サイズに合わせてゲーム全体をスケーリング（モバイル対応）
+function fitBoardToScreen() {
+  const container = document.querySelector('.game-container');
+  if (!container) return;
+
+  const baseWidth = 724;  // デザイン上の横サイズ
+  const baseHeight = 780; // デザイン上の縦サイズ
+
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+
+  const scale = Math.min(vw / baseWidth, vh / baseHeight, 1);
+  container.style.transform = `scale(${scale})`;
+  container.style.transformOrigin = 'center top';
+}
+
+window.addEventListener('load', fitBoardToScreen);
+window.addEventListener('resize', fitBoardToScreen);
 
 // ===== ゲーム状態 =====
 let board = [];           // ゲームボード（2次元配列）
