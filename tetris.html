@@ -106,6 +106,9 @@
     /* ===== ネクストピースプレビュー ===== */
     canvas#next {
       display: block;
+      width: 160px;
+      height: 160px;
+      max-width: 100%;
       margin: 0 auto;
     }
 
@@ -127,6 +130,10 @@
       font-size: 13px;
       line-height: 1.4;
       color: rgba(255, 255, 255, 0.45);
+    }
+    .pause-controls .controls {
+      display: inline-block;
+      text-align: left;
     }
     .controls kbd {
       display: inline-block;
@@ -261,7 +268,8 @@
       align-items: center;
     }
     .pause-overlay-btn {
-      min-width: 180px;
+      width: 220px;
+      min-width: 220px;
       position: relative;
       z-index: 1;
       cursor: pointer;
@@ -271,22 +279,26 @@
     .pause-label.hidden {
       display: none;
     }
-
-    /* ゲーム中のみ表示（スタート画面では非表示）・右上ポーズボタン */
-    .game-control-panel {
-      position: absolute;
-      top: 8px;
-      right: 8px;
-      z-index: 15;
+    body {
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+    /* 全canvas共通拡大は使わない（nextがはみ出すため） */
+    /* ゲーム中のみ表示（スタート画面では非表示） */
+    .panel-box.game-control-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 56px;
     }
-    .game-control-panel.hidden {
+    .panel-box.game-control-panel.hidden {
       display: none !important;
     }
-    .btn-pause {
-      padding: 4px 10px;
-      font-size: 12px;
-      border-radius: 999px;
-      box-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+    .game-control-panel .btn {
+      width: 100%;
     }
     /* ===== 携帯電話対応：画面幅に合わせてスケール変更 ===== */
 @media (max-width: 768px) {
@@ -335,10 +347,6 @@ canvas#board {
   min-width: 90px;
 }
 
-canvas#board {
-  width: 360px !important;
-  height: 720px !important;
-}
 }
 
 /* 追加のスケール指定は不要になったため削除（fitBoardToScreenで調整） */
@@ -351,11 +359,6 @@ canvas#board {
   <!-- ゲームボード -->
   <div class="board-wrapper">
     <canvas id="board"></canvas>
-
-    <!-- ポーズボタン（ゲーム中のみ表示） -->
-    <div class="game-control-panel hidden" id="gameControlPanel">
-      <button type="button" class="btn btn-pause" id="pauseBtn">ポーズ</button>
-    </div>
 
     <!-- スタート画面 -->
     <div class="overlay" id="startScreen">
@@ -386,36 +389,41 @@ canvas#board {
         <button type="button" class="btn pause-overlay-btn" id="endGameBtn">ゲームを終了</button>
       </div>
       <div class="pause-controls">
-        <h3>操作方法</h3>
         <div class="controls">
           <kbd>←</kbd><kbd>→</kbd>移動<br>
-          <kbd>↑</kbd>回転 <kbd>↓</kbd>落下<br>
-          <kbd>Space</kbd>ハードドロップ
+          <kbd>↑</kbd>回転<br>
+          <kbd>↓</kbd>ハードドロップ
         </div>
       </div>
     </div>
   </div>
 
   <!-- サイドパネル -->
-  <div class="side-panel">
-    <div class="panel-box">
+  <div class="side-panel" id="mobileBottomSheet">
+    <div class="panel-box stat-panel">
       <h3>スコア</h3>
       <div class="value" id="score">0</div>
     </div>
-    <div class="panel-box">
+    <div class="panel-box stat-panel">
       <h3>レベル</h3>
       <div class="value" id="level">1</div>
     </div>
-    <div class="panel-box">
+    <div class="panel-box stat-panel">
       <h3>ライン</h3>
       <div class="value" id="lines">0</div>
     </div>
-    <div class="panel-box">
+    <div class="panel-box next-panel">
       <h3>ネクスト</h3>
       <canvas id="next" width="160" height="160"></canvas>
     </div>
+    <div class="panel-box game-control-panel control-panel hidden" id="gameControlPanel">
+      <button type="button" class="btn" id="pauseBtn">ポーズ</button>
+    </div>
   </div>
 </div>
+
+<div class="mobile-next-dock" id="mobileNextDock"></div>
+<button type="button" class="mobile-sheet-toggle" id="mobileSheetToggle" aria-label="操作パネルを開く">^</button>
 
 
   
@@ -528,6 +536,9 @@ canvas#board {
     display: block;
   }
   canvas#next {
+    width: 160px;
+    height: 160px;
+    max-width: 100%;
     background: linear-gradient(113deg, #111820 83%, #271789 95%);
     border-radius: 7px;
     box-shadow: 0 1px 8px #00fff755;
@@ -668,6 +679,141 @@ canvas#board {
     border-radius: 6px;
     box-shadow: 0 0 6px #0efcff44;
   }
+
+  .mobile-next-dock {
+    display: none;
+  }
+  .mobile-sheet-toggle {
+    display: none;
+  }
+
+  /* ========== 最終適用: スマホ専用レイアウト ========== */
+  @media (max-width: 768px) {
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+    }
+
+    body {
+      display: block !important;
+      padding: 0 !important;
+    }
+
+    .game-container {
+      width: 100vw !important;
+      height: 100dvh !important;
+      min-width: 0 !important;
+      min-height: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      border: none !important;
+      border-radius: 0 !important;
+      box-shadow: none !important;
+      background: transparent !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      transform: none !important;
+    }
+
+    .board-wrapper {
+      width: min(calc(100dvh * 0.5), calc(100vw - 8px)) !important;
+      height: min(calc(100dvh - 8px), calc((100vw - 8px) * 2)) !important;
+      aspect-ratio: 1 / 2 !important;
+      margin: 0 auto !important;
+      border-radius: 12px !important;
+    }
+
+    canvas#board {
+      width: 100% !important;
+      height: 100% !important;
+      border-radius: 10px !important;
+    }
+
+    /* ネクストは右上に小さく固定表示 */
+    .mobile-next-dock {
+      display: block !important;
+      position: fixed !important;
+      top: calc(8px + env(safe-area-inset-top)) !important;
+      right: calc(8px + env(safe-area-inset-right)) !important;
+      z-index: 60 !important;
+    }
+    .mobile-next-dock .next-panel {
+      width: 104px !important;
+      padding: 6px !important;
+      margin: 0 !important;
+    }
+    .mobile-next-dock .next-panel h3 {
+      font-size: 10px !important;
+      margin-bottom: 4px !important;
+      letter-spacing: 1px !important;
+    }
+    .mobile-next-dock .next-panel canvas#next {
+      width: 90px !important;
+      height: 90px !important;
+    }
+
+    /* 下から出るパネル（スコア/レベル/ライン/ポーズ） */
+    .side-panel {
+      position: fixed !important;
+      left: 0 !important;
+      right: 0 !important;
+      bottom: 0 !important;
+      width: 100% !important;
+      min-width: 0 !important;
+      max-width: none !important;
+      max-height: none !important;
+      padding: 8px 8px calc(8px + env(safe-area-inset-bottom)) !important;
+      background: rgba(8, 12, 22, 0.92) !important;
+      border-top: 1px solid rgba(0, 255, 255, 0.25) !important;
+      box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35) !important;
+      display: grid !important;
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 8px !important;
+      z-index: 55 !important;
+      transform: translateY(calc(100% - 44px)) !important;
+      transition: transform 0.25s ease !important;
+      overflow: hidden !important;
+    }
+    .side-panel.open {
+      transform: translateY(0) !important;
+    }
+    .side-panel .stat-panel,
+    .side-panel .control-panel {
+      width: 100% !important;
+      min-width: 0 !important;
+    }
+    .side-panel .control-panel .btn {
+      width: 100% !important;
+    }
+
+    .side-panel .next-panel {
+      display: none !important;
+    }
+
+    .mobile-sheet-toggle {
+      display: block !important;
+      position: fixed !important;
+      left: 50% !important;
+      bottom: calc(8px + env(safe-area-inset-bottom)) !important;
+      transform: translateX(-50%) !important;
+      width: 52px !important;
+      height: 36px !important;
+      border-radius: 999px !important;
+      border: 1px solid rgba(0, 255, 255, 0.4) !important;
+      background: rgba(18, 25, 45, 0.92) !important;
+      color: #00fff7 !important;
+      font-size: 24px !important;
+      line-height: 1 !important;
+      z-index: 70 !important;
+      box-shadow: 0 0 12px rgba(0, 255, 255, 0.35) !important;
+    }
+    .mobile-sheet-toggle.open {
+      transform: translateX(-50%) rotate(180deg) !important;
+    }
+  }
 </style>
 <script>
 
@@ -705,29 +851,44 @@ const startScreen = document.getElementById('startScreen');
 const gameOverScreen = document.getElementById('gameOverScreen');
 const finalScoreEl   = document.getElementById('finalScore');
 const pauseLabel     = document.getElementById('pauseLabel');
+const bottomSheet    = document.getElementById('mobileBottomSheet');
+const sheetToggleBtn = document.getElementById('mobileSheetToggle');
+const mobileNextDock = document.getElementById('mobileNextDock');
+const nextPanel      = document.querySelector('.next-panel');
+const sidePanel      = document.querySelector('.side-panel');
 
 // キャンバスサイズ設定
 boardCanvas.width  = COLS * BLOCK_SIZE;
 boardCanvas.height = ROWS * BLOCK_SIZE;
 
-// 画面サイズに合わせてゲーム全体をスケーリング（モバイル対応）
-function fitBoardToScreen() {
-  const container = document.querySelector('.game-container');
-  if (!container) return;
-
-  const baseWidth = 724;  // デザイン上の横サイズ
-  const baseHeight = 780; // デザイン上の縦サイズ
-
-  const vw = window.innerWidth;
-  const vh = window.innerHeight;
-
-  const scale = Math.min(vw / baseWidth, vh / baseHeight, 1);
-  container.style.transform = `scale(${scale})`;
-  container.style.transformOrigin = 'center top';
+function isMobileLayout() {
+  return window.matchMedia('(max-width: 768px)').matches;
 }
 
-window.addEventListener('load', fitBoardToScreen);
-window.addEventListener('resize', fitBoardToScreen);
+function relocateNextPanel() {
+  if (!nextPanel || !sidePanel || !mobileNextDock) return;
+  if (isMobileLayout()) {
+    if (nextPanel.parentElement !== mobileNextDock) {
+      mobileNextDock.appendChild(nextPanel);
+    }
+  } else if (nextPanel.parentElement !== sidePanel) {
+    sidePanel.insertBefore(nextPanel, document.getElementById('gameControlPanel'));
+  }
+}
+
+function setBottomSheetOpen(isOpen) {
+  if (!bottomSheet || !sheetToggleBtn) return;
+  bottomSheet.classList.toggle('open', isOpen);
+  sheetToggleBtn.classList.toggle('open', isOpen);
+  sheetToggleBtn.textContent = isOpen ? 'v' : '^';
+}
+
+relocateNextPanel();
+setBottomSheetOpen(false);
+window.addEventListener('resize', () => {
+  relocateNextPanel();
+  if (!isMobileLayout()) setBottomSheetOpen(false);
+});
 
 // ===== ゲーム状態 =====
 let board = [];           // ゲームボード（2次元配列）
@@ -1050,6 +1211,7 @@ function startGame() {
   startScreen.classList.add('hidden');
   gameOverScreen.classList.add('hidden');
   pauseLabel.classList.add('hidden');
+  setBottomSheetOpen(false);
   document.getElementById('gameControlPanel')?.classList.remove('hidden');
   const pauseBtn = document.getElementById('pauseBtn');
   if (pauseBtn) pauseBtn.textContent = 'ポーズ';
@@ -1082,6 +1244,7 @@ function endGameFromPause() {
   gameOver = true;
   paused = false;
   pauseLabel.classList.add('hidden');
+  setBottomSheetOpen(false);
   document.getElementById('gameControlPanel')?.classList.add('hidden');
   if (animFrameId) {
     cancelAnimationFrame(animFrameId);
@@ -1114,11 +1277,7 @@ document.addEventListener('keydown', (e) => {
       movePiece(1);
       break;
     case 'ArrowDown':
-      if (dropPiece()) {
-        // 設置済み
-      } else {
-        score += 1; // ソフトドロップボーナス
-      }
+      hardDrop();
       lastDrop = performance.now();
       break;
     case 'ArrowUp':
@@ -1143,6 +1302,11 @@ document.addEventListener('keydown', (e) => {
 
 document.getElementById('startBtn').addEventListener('click', startGame);
 document.getElementById('retryBtn').addEventListener('click', startGame);
+sheetToggleBtn?.addEventListener('click', () => {
+  if (!bottomSheet) return;
+  const willOpen = !bottomSheet.classList.contains('open');
+  setBottomSheetOpen(willOpen);
+});
 
 document.getElementById('pauseBtn')?.addEventListener('click', () => {
   togglePause();
@@ -1235,15 +1399,17 @@ drawBoard();
         return;
       }
   
-      // ② スワイプ → 左右移動 or 落下
+      // ② スワイプ → 左右移動 or 高速下スワイプでハードドロップ
       if (absX >= absY) {
         // 横スワイプ
         if (dx > 0) fireKey('ArrowRight');
         else fireKey('ArrowLeft');
       } else {
-        // 縦スワイプ
-        if (dy > 0) fireKey('ArrowDown'); // 下＝ソフトドロップ
-        else fireKey(' ');                // 上＝ハードドロップ（不要ならこの行消す）
+        // 縦スワイプ（勢いよく下スライドした時だけハードドロップ）
+        const speedY = absY / Math.max(dt, 1); // px/ms
+        if (dy > 0 && speedY > 0.9 && absY > SWIPE_PX * 2) {
+          fireKey('ArrowDown');
+        }
       }
     }, opt);
   
